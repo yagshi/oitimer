@@ -35,6 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   audioplayers: ^6.1.2
+  just_audio: ^0.9.46
 
 dev_dependencies:
   flutter_test:
@@ -53,19 +54,13 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   fonts:
-  - family: Arcade
-    fonts:
-      - asset: assets/fonts/arcade_n.ttf
   - family: dseg7
     fonts:
       - asset: assets/fonts/dseg7classic-bolditalic.ttf
-
   assets:
-    - assets/sounds/
-    - assets/sounds/ding1.wav
-    - assets/sounds/ding1.mp3
-    - assets/sounds/ding2.mp3
-    - assets/sounds/ding3.mp3
+    - assets/ding1.mp3
+    - assets/ding2.mp3
+    - assets/ding3.mp3
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

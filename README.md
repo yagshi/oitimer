@@ -1,6 +1,6 @@
 # oitimer
 
-A new Flutter project.
+A Flutter application for the presentation timer (stop watch).
 
 ## Getting Started
 

@@ -1,4 +1,7 @@
 *~
+.firebase
+.firebaserc
+firebase.json
 # Miscellaneous
 *.class
 *.log

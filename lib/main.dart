@@ -36,8 +36,11 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counterPrev = 0;
   bool _counting = false;
   final int _fpms = 33; // frame rate per ms
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  final List<int> _bells = [180000, 300000, 480000];
+  final AudioPlayer _audioPlayer1 = AudioPlayer();
+  final AudioPlayer _audioPlayer2 = AudioPlayer();
+  final AudioPlayer _audioPlayer3 = AudioPlayer();
+  //final List<int> _bells = [180000, 300000, 480000];
+  final List<int> _bells = [5000, 10000, 15000];
   final List<TextEditingController> _bellControllers = [
     TextEditingController(),
     TextEditingController(),
@@ -50,20 +53,29 @@ class _MyHomePageState extends State<MyHomePage> {
     for (var i = 0; i < _bells.length; i++) {
       _bellControllers[i].text = (_bells[i] ~/ 1000 ~/ 60).toString();
     }
-    Timer.periodic(Duration(milliseconds: _fpms), (timer) async {
+    _audioPlayer1.setSource(AssetSource('ding1.mp3'));
+    _audioPlayer2.setSource(AssetSource('ding2.mp3'));
+    _audioPlayer3.setSource(AssetSource('ding3.mp3'));
+    _audioPlayer1.setPlayerMode(PlayerMode.lowLatency);
+    _audioPlayer2.setPlayerMode(PlayerMode.lowLatency);
+    _audioPlayer3.setPlayerMode(PlayerMode.lowLatency);
+    Timer.periodic(Duration(milliseconds: _fpms), (timer) {
       if (!_counting) return;
       _counterPrev = _counterMs;
       setState(() {
         _counterMs += _fpms;
       });
       if (_counterPrev < _bells[0] && _counterMs >= _bells[0]) {
-        await _audioPlayer.play(AssetSource('sounds/ding1.mp3'));
+        //await _audioPlayer1.play(AssetSource('ding1.mp3'));
+        _audioPlayer1.resume();
       }
       if (_counterPrev < _bells[1] && _counterMs >= _bells[1]) {
-        await _audioPlayer.play(AssetSource('sounds/ding2.mp3'));
+        _audioPlayer2.resume();
+//        _audioPlayer.play(AssetSource('sounds/ding2.mp3'));
       }
       if (_counterPrev < _bells[2] && _counterMs >= _bells[2]) {
-        await _audioPlayer.play(AssetSource('sounds/ding3.mp3'));
+        _audioPlayer3.resume();
+//        _audioPlayer.play(AssetSource('sounds/ding3.mp3'));
       }
     });
   }
@@ -173,19 +185,21 @@ class _MyHomePageState extends State<MyHomePage> {
               _counting = !_counting;
             });
           },
-          tooltip: 'Increment',
+          tooltip: 'start/stop',
           child: _counting
               ? const Icon(Icons.pause)
               : const Icon(Icons.play_arrow),
         ),
         FloatingActionButton(
-          onPressed: () {
+          onPressed: () async {
+            await _audioPlayer1.resume();
+            //_audioPlayer1.play(AssetSource('ding1.mp3'));
             setState(() {
               _counting = false;
               _counterMs = 0;
             });
           },
-          tooltip: 'Increment',
+          tooltip: 'reset',
           child: const Icon(Icons.restore),
         ),
       ]),
