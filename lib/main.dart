@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:just_audio/just_audio.dart';
 
 void main() {
   runApp(const MyApp());
@@ -53,12 +53,15 @@ class _MyHomePageState extends State<MyHomePage> {
     for (var i = 0; i < _bells.length; i++) {
       _bellControllers[i].text = (_bells[i] ~/ 1000 ~/ 60).toString();
     }
-    _audioPlayer1.setSource(AssetSource('ding1.mp3'));
-    _audioPlayer2.setSource(AssetSource('ding2.mp3'));
-    _audioPlayer3.setSource(AssetSource('ding3.mp3'));
-    _audioPlayer1.setPlayerMode(PlayerMode.lowLatency);
-    _audioPlayer2.setPlayerMode(PlayerMode.lowLatency);
-    _audioPlayer3.setPlayerMode(PlayerMode.lowLatency);
+    (() async {
+      await _audioPlayer1.setAsset('assets/ding1.mp3');
+      await _audioPlayer2.setAsset('assets/ding2.mp3');
+      await _audioPlayer3.setAsset('assets/ding3.mp3');
+      await _audioPlayer1.load();
+      await _audioPlayer2.load();
+      await _audioPlayer3.load();
+      print("loaded.");
+    })();
     Timer.periodic(Duration(milliseconds: _fpms), (timer) {
       if (!_counting) return;
       _counterPrev = _counterMs;
@@ -66,16 +69,13 @@ class _MyHomePageState extends State<MyHomePage> {
         _counterMs += _fpms;
       });
       if (_counterPrev < _bells[0] && _counterMs >= _bells[0]) {
-        //await _audioPlayer1.play(AssetSource('ding1.mp3'));
-        _audioPlayer1.resume();
+        _audioPlayer1.play();
       }
       if (_counterPrev < _bells[1] && _counterMs >= _bells[1]) {
-        _audioPlayer2.resume();
-//        _audioPlayer.play(AssetSource('sounds/ding2.mp3'));
+        _audioPlayer2.play();
       }
       if (_counterPrev < _bells[2] && _counterMs >= _bells[2]) {
-        _audioPlayer3.resume();
-//        _audioPlayer.play(AssetSource('sounds/ding3.mp3'));
+        _audioPlayer3.play();
       }
     });
   }
@@ -192,8 +192,12 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         FloatingActionButton(
           onPressed: () async {
-            await _audioPlayer1.resume();
-            //_audioPlayer1.play(AssetSource('ding1.mp3'));
+            await _audioPlayer1.stop();
+            await _audioPlayer2.stop();
+            await _audioPlayer3.stop();
+            await _audioPlayer1.seek(Duration(seconds: 0));
+            await _audioPlayer2.seek(Duration(seconds: 0));
+            await _audioPlayer3.seek(Duration(seconds: 0));
             setState(() {
               _counting = false;
               _counterMs = 0;
