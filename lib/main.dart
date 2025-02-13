@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
+const int lcdAlpha1 = 220; // for ON segment
+const int lcdAlpha0 = 60; // for OFF segment
+
 void main() {
   runApp(const MyApp());
 }
@@ -23,6 +26,88 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// 123 -> 00123 (n=5)
+String nDigits(int x, int n, {pad = " "}) {
+  return ((s) => s.substring(s.length - n))(pad * n + x.toString());
+}
+
+// limited to 7seg font
+class _LCDDigit extends StatelessWidget {
+  final String strFG, strBG;
+  const _LCDDigit(this.strFG, this.strBG, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(children: [
+      FittedBox(
+          fit: BoxFit.contain,
+          child: Text(strBG,
+              style: TextStyle(
+                  fontFamily: 'dseg7',
+                  fontSize: 1000,
+                  color: Colors.grey.withAlpha(lcdAlpha0)))),
+      FittedBox(
+          fit: BoxFit.contain,
+          child: Text(strFG,
+              style: TextStyle(
+                  fontFamily: 'dseg7',
+                  fontSize: 1000,
+                  color: Colors.black.withAlpha(lcdAlpha1)))),
+    ]);
+  }
+}
+
+class _BellsIndicator extends StatelessWidget {
+  final List<bool> flags;
+  final List<int> values;
+  const _BellsIndicator(
+      {this.flags = const [], this.values = const [], super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        FittedBox(
+          child: Icon(Icons.notifications,
+              size: 100,
+              color: Colors.black.withAlpha(flags[0] ? lcdAlpha1 : lcdAlpha0)),
+        ),
+        FittedBox(
+            child:
+                _LCDDigit("${nDigits(values[0], 2, pad: "0")}    ", "88   ")),
+        FittedBox(
+            child: Row(children: [
+          Icon(Icons.notifications,
+              size: 100,
+              color: Colors.black.withAlpha(flags[1] ? lcdAlpha1 : lcdAlpha0)),
+          Icon(Icons.notifications,
+              size: 100,
+              color: Colors.black.withAlpha(flags[1] ? lcdAlpha1 : lcdAlpha0)),
+        ])),
+        FittedBox(
+            child:
+                _LCDDigit("${nDigits(values[1], 2, pad: "0")}    ", "88   ")),
+        FittedBox(
+            child: Row(children: [
+          Icon(Icons.notifications,
+              size: 100,
+              color: Colors.black.withAlpha(flags[2] ? lcdAlpha1 : lcdAlpha0)),
+          Icon(Icons.notifications,
+              size: 100,
+              color: Colors.black.withAlpha(flags[2] ? lcdAlpha1 : lcdAlpha0)),
+          Icon(Icons.notifications,
+              size: 100,
+              color: Colors.black.withAlpha(flags[2] ? lcdAlpha1 : lcdAlpha0)),
+        ])),
+        FittedBox(
+            child:
+                _LCDDigit("${nDigits(values[2], 2, pad: "0")}    ", "88   ")),
+      ],
+    );
+  }
+}
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
   final String title;
@@ -39,8 +124,9 @@ class _MyHomePageState extends State<MyHomePage> {
   final AudioPlayer _audioPlayer1 = AudioPlayer();
   final AudioPlayer _audioPlayer2 = AudioPlayer();
   final AudioPlayer _audioPlayer3 = AudioPlayer();
-  //final List<int> _bells = [180000, 300000, 480000];
-  final List<int> _bells = [5000, 10000, 15000];
+  final List<int> _bells = [600000, 900000, 1200000];
+  //final List<int> _bells = [5000, 10000, 15000];
+  List<bool> _bellFlags = [false, false, false];
   final List<TextEditingController> _bellControllers = [
     TextEditingController(),
     TextEditingController(),
@@ -60,7 +146,6 @@ class _MyHomePageState extends State<MyHomePage> {
       await _audioPlayer1.load();
       await _audioPlayer2.load();
       await _audioPlayer3.load();
-      print("loaded.");
     })();
     Timer.periodic(Duration(milliseconds: _fpms), (timer) {
       if (!_counting) return;
@@ -69,12 +154,21 @@ class _MyHomePageState extends State<MyHomePage> {
         _counterMs += _fpms;
       });
       if (_counterPrev < _bells[0] && _counterMs >= _bells[0]) {
+        setState(() {
+          _bellFlags[0] = true;
+        });
         _audioPlayer1.play();
       }
       if (_counterPrev < _bells[1] && _counterMs >= _bells[1]) {
+        setState(() {
+          _bellFlags[1] = true;
+        });
         _audioPlayer2.play();
       }
       if (_counterPrev < _bells[2] && _counterMs >= _bells[2]) {
+        setState(() {
+          _bellFlags[2] = true;
+        });
         _audioPlayer3.play();
       }
     });
@@ -82,12 +176,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final ds = ((x) =>
-        x.substring(x.length - 2))("0${(_counterMs % 1000 ~/ 10).toString()}");
-    final s = ((x) =>
-        x.substring(x.length - 2))("0${(_counterMs ~/ 1000 % 60).toString()}");
-    final m = ((x) =>
-        x.substring(x.length - 2))("0${(_counterMs ~/ 1000 ~/ 60).toString()}");
+    final ds = nDigits(_counterMs % 1000 ~/ 10, 2, pad: "0");
+    final s = nDigits(_counterMs ~/ 1000 % 60, 2, pad: "0");
+    final m = nDigits(_counterMs ~/ 1000 ~/ 60, 2, pad: "0");
     final bg = (_counterMs < _bells[0]
             ? Colors.green
             : (_counterMs < _bells[1]
@@ -159,21 +250,18 @@ class _MyHomePageState extends State<MyHomePage> {
                           width: 8,
                         )),
                     child: Center(
-                        child: Stack(children: [
-                      FittedBox(
-                          fit: BoxFit.contain,
-                          child: Text("88:88:88",
-                              style: TextStyle(
-                                  fontFamily: 'dseg7',
-                                  fontSize: 1000,
-                                  color: Colors.grey.withAlpha(40)))),
-                      FittedBox(
-                          fit: BoxFit.contain,
-                          child: Text("$m:$s:$ds",
-                              style: TextStyle(
-                                  fontFamily: 'dseg7',
-                                  fontSize: 1000,
-                                  color: Colors.black.withAlpha(200)))),
+                        child: Column(children: [
+                      Flexible(
+                        flex: 2,
+                        child: _BellsIndicator(
+                            flags: _bellFlags,
+                            values:
+                                _bells.map((x) => x ~/ 1000 ~/ 60).toList()),
+                      ),
+                      Flexible(
+                        flex: 8,
+                        child: _LCDDigit("$m:$s:$ds", "88:88:88"),
+                      ),
                     ]))))),
         SizedBox(height: 100, child: Text("Yagshi 2025")),
       ])),
@@ -201,6 +289,7 @@ class _MyHomePageState extends State<MyHomePage> {
             setState(() {
               _counting = false;
               _counterMs = 0;
+              _bellFlags = [false, false, false];
             });
           },
           tooltip: 'reset',
