@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
 const int lcdAlpha1 = 220; // for ON segment
-const int lcdAlpha0 = 60; // for OFF segment
+const int lcdAlpha0 = 20; // for OFF segment
 
 void main() {
   runApp(const MyApp());
@@ -40,14 +40,12 @@ class _LCDDigit extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(children: [
       FittedBox(
-          fit: BoxFit.contain,
           child: Text(strBG,
               style: TextStyle(
                   fontFamily: 'dseg7',
                   fontSize: 1000,
-                  color: Colors.grey.withAlpha(lcdAlpha0)))),
+                  color: Colors.black.withAlpha(lcdAlpha0)))),
       FittedBox(
-          fit: BoxFit.contain,
           child: Text(strFG,
               style: TextStyle(
                   fontFamily: 'dseg7',
@@ -68,41 +66,29 @@ class _BellsIndicator extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        FittedBox(
-          child: Icon(Icons.notifications,
-              size: 100,
-              color: Colors.black.withAlpha(flags[0] ? lcdAlpha1 : lcdAlpha0)),
-        ),
-        FittedBox(
-            child:
-                _LCDDigit("${nDigits(values[0], 2, pad: "0")}    ", "88   ")),
-        FittedBox(
-            child: Row(children: [
-          Icon(Icons.notifications,
-              size: 100,
-              color: Colors.black.withAlpha(flags[1] ? lcdAlpha1 : lcdAlpha0)),
-          Icon(Icons.notifications,
-              size: 100,
-              color: Colors.black.withAlpha(flags[1] ? lcdAlpha1 : lcdAlpha0)),
-        ])),
-        FittedBox(
-            child:
-                _LCDDigit("${nDigits(values[1], 2, pad: "0")}    ", "88   ")),
-        FittedBox(
-            child: Row(children: [
-          Icon(Icons.notifications,
-              size: 100,
-              color: Colors.black.withAlpha(flags[2] ? lcdAlpha1 : lcdAlpha0)),
-          Icon(Icons.notifications,
-              size: 100,
-              color: Colors.black.withAlpha(flags[2] ? lcdAlpha1 : lcdAlpha0)),
-          Icon(Icons.notifications,
-              size: 100,
-              color: Colors.black.withAlpha(flags[2] ? lcdAlpha1 : lcdAlpha0)),
-        ])),
-        FittedBox(
-            child:
-                _LCDDigit("${nDigits(values[2], 2, pad: "0")}    ", "88   ")),
+        for (var i = 0; i < values.length; i++) ...[
+          Flexible(
+              flex: 1,
+              child: Row(children: [
+                Flexible(
+                    flex: values.length,
+                    child: FittedBox(
+                        child: Row(children: [
+                      for (var j = 0; j < values.length; j++)
+                        Icon(Icons.notifications,
+                            size: 1000,
+                            color: Colors.black.withAlpha(
+                                (values.length - j - 1) > i
+                                    ? 0
+                                    : (flags[i] ? lcdAlpha1 : lcdAlpha0))),
+                    ]))),
+                Flexible(
+                    flex: 2,
+                    child: FittedBox(
+                        child:
+                            _LCDDigit(nDigits(values[i], 2, pad: "0"), "88"))),
+              ]))
+        ]
       ],
     );
   }
@@ -117,10 +103,11 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counterMs = 0;
-  int _counterPrev = 0;
+  int _msCur = 0;
+  int _msPrev = 0;
   bool _counting = false;
   Timer _timer = Timer(Duration(seconds: 0), () {});
+  final Stopwatch _stopwatch = Stopwatch();
   final int _fpms = 33; // frame rate per ms
   final AudioPlayer _audioPlayer1 = AudioPlayer();
   final AudioPlayer _audioPlayer2 = AudioPlayer();
@@ -152,14 +139,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final ds = nDigits(_counterMs % 1000 ~/ 10, 2, pad: "0");
-    final s = nDigits(_counterMs ~/ 1000 % 60, 2, pad: "0");
-    final m = nDigits(_counterMs ~/ 1000 ~/ 60, 2, pad: "0");
-    final bg = (_counterMs < _bells[0]
+    //final ds = nDigits(_counterMs % 1000 ~/ 10, 2, pad: "0");
+    final ds = nDigits(_msCur % 1000 ~/ 10, 2, pad: "0");
+    final s = nDigits(_msCur ~/ 1000 % 60, 2, pad: "0");
+    final m = nDigits(_msCur ~/ 1000 ~/ 60, 2, pad: "0");
+    final bg = (_msCur < _bells[0]
             ? Colors.green
-            : (_counterMs < _bells[1]
+            : (_msCur < _bells[1]
                 ? Colors.orange
-                : (_counterMs < _bells[2] || _counterMs ~/ 1000 % 2 == 0
+                : (_msCur < _bells[2] || _msCur ~/ 1000 % 2 == 0
                     ? Colors.red
                     : Colors.grey)))
         .withAlpha(120);
@@ -171,8 +159,7 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Row(children: [
-          Text("Bells:  ",
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
+          Text("Bells:  ", style: TextStyle(fontSize: 30)),
           Spacer(),
           Expanded(
             child: TextField(
@@ -229,6 +216,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: Column(children: [
                       Flexible(
                         flex: 2,
+//                          child: Flexible(
                         child: _BellsIndicator(
                             flags: _bellFlags,
                             values:
@@ -249,25 +237,26 @@ class _MyHomePageState extends State<MyHomePage> {
               _counting = !_counting;
             });
             if (_counting) {
+              _stopwatch.start();
               _timer.cancel();
               _timer = Timer.periodic(Duration(milliseconds: _fpms), (timer) {
-                _counterPrev = _counterMs;
+                _msPrev = _msCur;
                 setState(() {
-                  _counterMs += _fpms;
+                  _msCur = _stopwatch.elapsedMilliseconds;
                 });
-                if (_counterPrev < _bells[0] && _counterMs >= _bells[0]) {
+                if (_msPrev < _bells[0] && _msCur >= _bells[0]) {
                   setState(() {
                     _bellFlags[0] = true;
                   });
                   _audioPlayer1.play();
                 }
-                if (_counterPrev < _bells[1] && _counterMs >= _bells[1]) {
+                if (_msPrev < _bells[1] && _msCur >= _bells[1]) {
                   setState(() {
                     _bellFlags[1] = true;
                   });
                   _audioPlayer2.play();
                 }
-                if (_counterPrev < _bells[2] && _counterMs >= _bells[2]) {
+                if (_msPrev < _bells[2] && _msCur >= _bells[2]) {
                   setState(() {
                     _bellFlags[2] = true;
                   });
@@ -275,6 +264,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 }
               });
             } else {
+              _stopwatch.stop();
               _timer.cancel();
             }
           },
@@ -293,10 +283,12 @@ class _MyHomePageState extends State<MyHomePage> {
             await _audioPlayer3.seek(Duration(seconds: 0));
             setState(() {
               _counting = false;
-              _counterMs = 0;
+              _msCur = 0;
+              _msPrev = 0;
               _bellFlags = [false, false, false];
             });
             _timer.cancel();
+            _stopwatch.reset();
           },
           tooltip: 'reset',
           child: const Icon(Icons.restore),
