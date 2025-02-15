@@ -120,6 +120,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counterMs = 0;
   int _counterPrev = 0;
   bool _counting = false;
+  Timer _timer = Timer(Duration(seconds: 0), () {});
   final int _fpms = 33; // frame rate per ms
   final AudioPlayer _audioPlayer1 = AudioPlayer();
   final AudioPlayer _audioPlayer2 = AudioPlayer();
@@ -147,31 +148,6 @@ class _MyHomePageState extends State<MyHomePage> {
       await _audioPlayer2.load();
       await _audioPlayer3.load();
     })();
-    Timer.periodic(Duration(milliseconds: _fpms), (timer) {
-      if (!_counting) return;
-      _counterPrev = _counterMs;
-      setState(() {
-        _counterMs += _fpms;
-      });
-      if (_counterPrev < _bells[0] && _counterMs >= _bells[0]) {
-        setState(() {
-          _bellFlags[0] = true;
-        });
-        _audioPlayer1.play();
-      }
-      if (_counterPrev < _bells[1] && _counterMs >= _bells[1]) {
-        setState(() {
-          _bellFlags[1] = true;
-        });
-        _audioPlayer2.play();
-      }
-      if (_counterPrev < _bells[2] && _counterMs >= _bells[2]) {
-        setState(() {
-          _bellFlags[2] = true;
-        });
-        _audioPlayer3.play();
-      }
-    });
   }
 
   @override
@@ -272,6 +248,35 @@ class _MyHomePageState extends State<MyHomePage> {
             setState(() {
               _counting = !_counting;
             });
+            if (_counting) {
+              _timer.cancel();
+              _timer = Timer.periodic(Duration(milliseconds: _fpms), (timer) {
+                _counterPrev = _counterMs;
+                setState(() {
+                  _counterMs += _fpms;
+                });
+                if (_counterPrev < _bells[0] && _counterMs >= _bells[0]) {
+                  setState(() {
+                    _bellFlags[0] = true;
+                  });
+                  _audioPlayer1.play();
+                }
+                if (_counterPrev < _bells[1] && _counterMs >= _bells[1]) {
+                  setState(() {
+                    _bellFlags[1] = true;
+                  });
+                  _audioPlayer2.play();
+                }
+                if (_counterPrev < _bells[2] && _counterMs >= _bells[2]) {
+                  setState(() {
+                    _bellFlags[2] = true;
+                  });
+                  _audioPlayer3.play();
+                }
+              });
+            } else {
+              _timer.cancel();
+            }
           },
           tooltip: 'start/stop',
           child: _counting
@@ -291,6 +296,7 @@ class _MyHomePageState extends State<MyHomePage> {
               _counterMs = 0;
               _bellFlags = [false, false, false];
             });
+            _timer.cancel();
           },
           tooltip: 'reset',
           child: const Icon(Icons.restore),
